@@ -1,0 +1,76 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: lang-claw-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-lang_claw}
+      POSTGRES_USER: ${POSTGRES_USER:-langclaw}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-langclaw}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-langclaw} -d ${POSTGRES_DB:-lang_claw}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  mongo:
+    image: mongo:7
+    container_name: lang-claw-mongo
+    ports:
+      - "${MONGO_PORT:-27017}:27017"
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+    container_name: lang-claw-backend
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+      APP_HOST: 0.0.0.0
+      APP_PORT: 8000
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+      DEFAULT_USER_ID: ${DEFAULT_USER_ID:-local-user}
+      ZHIPU_API_KEY: ${ZHIPU_API_KEY}
+      ZHIPU_BASE_URL: ${ZHIPU_BASE_URL:-https://open.bigmodel.cn/api/paas/v4/}
+      LLM_MODEL: ${LLM_MODEL:-glm-5}
+      LLM_TEMPERATURE: ${LLM_TEMPERATURE:-0.2}
+      MONGO_URI: ${MONGO_URI:-mongodb://mongo:27017}
+      MONGO_DB: ${MONGO_DB:-lang_claw}
+      MONGO_HISTORY_COLLECTION: ${MONGO_HISTORY_COLLECTION:-chat_history}
+      POSTGRES_DSN: ${POSTGRES_DSN:-postgresql+asyncpg://langclaw:langclaw@postgres:5432/lang_claw}
+      LANGSMITH_API_KEY: ${LANGSMITH_API_KEY:-}
+      LANGSMITH_PROJECT: ${LANGSMITH_PROJECT:-lang-claw}
+      LANGSMITH_TRACING: ${LANGSMITH_TRACING:-true}
+      LANGSMITH_ENDPOINT: ${LANGSMITH_ENDPOINT:-https://api.smith.langchain.com}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: lang-claw-frontend
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8000}
+    depends_on:
+      backend:
+        condition: service_started
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+
+volumes:
+  postgres_data:
+  mongo_data:
