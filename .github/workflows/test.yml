@@ -30,20 +30,20 @@ jobs:
           version: 'latest'
 
       - name: Install dependencies
-        run: |
-          uv sync --dev
+        working-directory: backend
+        run: uv sync --dev
 
       - name: Run linting
-        run: |
-          uv run ruff check . || true
+        working-directory: backend
+        run: uv run ruff check . || true
 
       - name: Run type checking
-        run: |
-          uv run mypy . || true
+        working-directory: backend
+        run: uv run mypy . || true
 
       - name: Run tests
-        run: |
-          uv run pytest tests/ -v --tb=short || true
+        working-directory: backend
+        run: uv run pytest tests/ -v --tb=short || true
 
       - name: Report status
         if: always()
