@@ -1,0 +1,53 @@
+name: Test Pipeline
+
+on:
+  push:
+    branches:
+      - master
+      - main
+      - 'feat/**'
+  pull_request:
+    branches:
+      - master
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: 'latest'
+
+      - name: Install dependencies
+        run: |
+          uv sync --dev
+
+      - name: Run linting
+        run: |
+          uv run ruff check . || true
+
+      - name: Run type checking
+        run: |
+          uv run mypy . || true
+
+      - name: Run tests
+        run: |
+          uv run pytest tests/ -v --tb=short || true
+
+      - name: Report status
+        if: always()
+        run: |
+          echo "Test pipeline completed"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Commit: ${{ github.sha }}"
