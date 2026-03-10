@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git branch:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git pull:*)",
+      "Bash(git checkout:*)",
+      "Bash(gh pr:*)",
+      "Bash(gh repo:*)",
+      "Bash(gh run:*)",
+      "Bash(gh workflow:*)"
+    ],
+    "deny": [
+      "Bash(git push --force:*)",
+      "Bash(git reset --hard:*)",
+      "Bash(git clean -fd:*)",
+      "Bash(rm -rf /*)"
+    ]
+  },
+  "attribution": {
+    "commit": "\n\nCo-Authored-By: Claude (glm-5) <noreply@anthropic.com>",
+    "pr": "\n\nGenerated with [Claude Code](https://claude.com/claude-code)"
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash(git commit:*)",
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "Before committing, verify that:\n1. All changes are intentional and reviewed\n2. No secrets or sensitive data are being committed\n3. The commit message follows conventional commits format\nReturn 'approve' if safe, 'deny' if issues found."
+          }
+        ]
+      },
+      {
+        "matcher": "Bash(git push:*)",
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "Before pushing, verify that:\n1. Local tests pass (if applicable)\n2. No breaking changes without coordination\n3. Branch is up to date with remote\nReturn 'approve' if safe to push."
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash(git commit:*)",
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "After successful commit, remind the user they can:\n1. Run /review to review more changes\n2. Run /commit-push to push the commit\n3. Run /pr to create a pull request"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash(git push:*)",
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "After push, check if GitHub Actions workflow was triggered and report the status URL if available."
+          }
+        ]
+      }
+    ]
+  }
+}
