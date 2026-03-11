@@ -1,9 +1,12 @@
+import logging
 from datetime import datetime
 
 from langchain_core.tools import tool
 
 from app.db.repositories import ProfileRepository, TaskRepository
 from app.db.session import get_session_factory
+
+logger = logging.getLogger(__name__)
 
 
 def build_personal_tools(user_id: str) -> list:
@@ -34,7 +37,19 @@ def build_personal_tools(user_id: str) -> list:
     @tool
     async def create_task(title: str, details: str = "", due_at_iso: str = "") -> dict:
         """Create a task for the current user."""
-        due_at = datetime.fromisoformat(due_at_iso) if due_at_iso else None
+        due_at = None
+        if due_at_iso:
+            try:
+                due_at = datetime.fromisoformat(due_at_iso)
+            except ValueError:
+                logger.warning(
+                    "Invalid ISO date format for due_at_iso",
+                    extra={"due_at_iso": due_at_iso, "user_id": user_id}
+                )
+                return {
+                    "error": "Invalid date format. Please use ISO 8601 format (e.g., 2024-12-31T15:30:00).",
+                    "task_id": None,
+                }
         async with session_factory() as session:
             repo = TaskRepository(session)
             task = await repo.create(

@@ -1,4 +1,5 @@
 import json
+import logging
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
@@ -6,6 +7,8 @@ from fastapi.responses import StreamingResponse
 from app.db.repositories import SessionRepository, UserRepository
 from app.db.session import get_session_factory
 from app.schemas.chat import ChatRequest
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
 
@@ -62,7 +65,15 @@ async def stream_chat(request: Request, payload: ChatRequest) -> StreamingRespon
                 assistant_chunks.append(chunk)
                 yield _sse("token", {"content": chunk})
         except Exception as exc:
-            yield _sse("error", {"message": str(exc)})
+            logger.exception(
+                "Error during chat streaming",
+                extra={
+                    "user_id": user.id,
+                    "session_id": session_row.thread_id,
+                    "error_type": type(exc).__name__,
+                },
+            )
+            yield _sse("error", {"message": "An internal error occurred. Please try again."})
             return
 
         final_text = "".join(assistant_chunks).strip()
