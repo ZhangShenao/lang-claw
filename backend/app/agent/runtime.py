@@ -1,3 +1,5 @@
+"""Agent runtime."""
+
 import json
 from collections.abc import AsyncIterator
 from typing import Any
@@ -6,10 +8,10 @@ from deepagents import create_deep_agent
 from langchain_core.messages import AIMessage, AIMessageChunk, BaseMessage
 from langchain_openai import ChatOpenAI
 
-from app.agent.prompts import MAIN_SYSTEM_PROMPT, PERSONAL_DATA_PROMPT
+from app.agent.prompts import MAIN_SYSTEM_PROMPT
+from app.agent.subagents import build_deep_research_agent, build_personal_data_agent
 from app.core.config import Settings
 from app.observability.langsmith import build_run_config
-from app.tools.personal_tools import build_personal_tools
 
 
 class AgentRuntime:
@@ -26,17 +28,17 @@ class AgentRuntime:
         )
 
     def _build_agent(self, user_id: str):
-        tools = build_personal_tools(user_id)
-        personal_data_agent = {
-            "name": "personal-data",
-            "description": "Handles saved profile data, preferences, and user tasks.",
-            "system_prompt": PERSONAL_DATA_PROMPT,
-            "tools": tools,
-        }
+        # Build sub-agents
+        personal_data_agent = build_personal_data_agent(user_id)
+        deep_research_agent = build_deep_research_agent()
+
+        # Main agent can use personal tools directly for convenience
+        all_tools = personal_data_agent["tools"]
+
         return create_deep_agent(
             model=self._build_model(),
-            tools=tools,
-            subagents=[personal_data_agent],
+            tools=all_tools,
+            subagents=[personal_data_agent, deep_research_agent],
             system_prompt=MAIN_SYSTEM_PROMPT,
             checkpointer=self.checkpointer,
         )

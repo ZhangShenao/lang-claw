@@ -33,3 +33,7 @@
 ## 详细方案
 
 完整技术方案见：[`docs/technical-solution.md`](docs/technical-solution.md)
+
+## Sub-Agents
+
+- [DeepResearch Sub-Agent](./docs/deep-research-subagent.md) - 深度调研分析子代理
