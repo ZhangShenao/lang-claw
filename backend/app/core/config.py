@@ -40,6 +40,8 @@ class Settings(BaseSettings):
     langsmith_tracing: bool = True
     langsmith_endpoint: str = "https://api.smith.langchain.com"
 
+    tavily_api_key: str = ""
+
     @field_validator("cors_origins", mode="before")
     @classmethod
     def parse_cors_origins(cls, value: Any) -> list[str]:
